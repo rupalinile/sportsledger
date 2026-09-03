@@ -1,3 +1,4 @@
+export * from './app-version.repository';
 export * from './auth.repository';
 export * from './dashboard.repository';
 export * from './match.repository';

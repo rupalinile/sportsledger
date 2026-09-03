@@ -16,17 +16,61 @@ type EmailContent = {
   html: string;
 };
 
+type SmtpConfig = {
+  host: string;
+  port: number;
+  secure: boolean;
+  user: string;
+  password: string;
+  fromName: string;
+  fromEmail: string;
+};
+
 let transporter: Transporter | null = null;
+
+/**
+ * SMTP configuration is optional during application startup.
+ *
+ * It becomes required only when an email needs to be sent.
+ */
+const getSmtpConfig = (): SmtpConfig => {
+  if (
+    !env.SMTP_HOST ||
+    !env.SMTP_PORT ||
+    env.SMTP_SECURE === undefined ||
+    !env.SMTP_USER ||
+    !env.SMTP_PASSWORD ||
+    !env.SMTP_FROM_NAME ||
+    !env.SMTP_FROM_EMAIL
+  ) {
+    throw new AppError(
+      'Email service is not configured',
+      HTTP_STATUS.INTERNAL_SERVER_ERROR
+    );
+  }
+
+  return {
+    host: env.SMTP_HOST,
+    port: env.SMTP_PORT,
+    secure: env.SMTP_SECURE,
+    user: env.SMTP_USER,
+    password: env.SMTP_PASSWORD,
+    fromName: env.SMTP_FROM_NAME,
+    fromEmail: env.SMTP_FROM_EMAIL
+  };
+};
 
 const getTransporter = (): Transporter => {
   if (!transporter) {
+    const smtp = getSmtpConfig();
+
     transporter = nodemailer.createTransport({
-      host: env.SMTP_HOST,
-      port: env.SMTP_PORT,
-      secure: env.SMTP_SECURE,
+      host: smtp.host,
+      port: smtp.port,
+      secure: smtp.secure,
       auth: {
-        user: env.SMTP_USER,
-        pass: env.SMTP_PASSWORD
+        user: smtp.user,
+        pass: smtp.password
       }
     });
   }
@@ -43,12 +87,17 @@ const escapeHtml = (value: string): string =>
     .replace(/'/g, '&#39;');
 
 const formatFromAddress = (): string => {
-  const fromName = env.SMTP_FROM_NAME.replace(/"/g, '\\"');
+  const smtp = getSmtpConfig();
 
-  return `"${fromName}" <${env.SMTP_FROM_EMAIL}>`;
+  const fromName = smtp.fromName.replace(/"/g, '\\"');
+
+  return `"${fromName}" <${smtp.fromEmail}>`;
 };
 
-const logDevelopmentOtp = (to: string, otp: string): void => {
+const logDevelopmentOtp = (
+  to: string,
+  otp: string
+): void => {
   if (env.NODE_ENV === 'development') {
     console.info(`Password reset OTP for ${to}: ${otp}`);
   }
@@ -60,15 +109,17 @@ const buildPasswordResetOtpEmail = ({
   expiresInMinutes
 }: SendPasswordResetOtpEmailParams): EmailContent => {
   const recipientName = fullName?.trim() || 'there';
-  const subject = 'CrickTrack Password Reset Verification';
+
+  const subject =
+    'SportLedger Password Reset Verification';
 
   const text = [
-    'CrickTrack',
+    'SportLedger',
     'Password Reset Verification',
     '',
     `Hello ${recipientName},`,
     '',
-    'Your OTP for resetting your CrickTrack password is:',
+    'Your OTP for resetting your SportLedger password is:',
     '',
     otp,
     '',
@@ -77,18 +128,23 @@ const buildPasswordResetOtpEmail = ({
     'If you did not request a password reset, you can ignore this email.'
   ].join('\n');
 
-  const safeRecipientName = escapeHtml(recipientName);
-  const safeOtp = escapeHtml(otp);
-  const safeExpiresInMinutes = escapeHtml(String(expiresInMinutes));
+  const safeRecipientName =
+    escapeHtml(recipientName);
+
+  const safeOtp =
+    escapeHtml(otp);
+
+  const safeExpiresInMinutes =
+    escapeHtml(String(expiresInMinutes));
 
   const html = [
     '<!doctype html>',
     '<html lang="en">',
     '<body>',
-    '<h1>CrickTrack</h1>',
+    '<h1>SportLedger</h1>',
     '<h2>Password Reset Verification</h2>',
     `<p>Hello ${safeRecipientName},</p>`,
-    '<p>Your OTP for resetting your CrickTrack password is:</p>',
+    '<p>Your OTP for resetting your SportLedger password is:</p>',
     `<p><strong>${safeOtp}</strong></p>`,
     `<p>This OTP expires in ${safeExpiresInMinutes} minutes.</p>`,
     '<p>If you did not request a password reset, you can ignore this email.</p>',
@@ -103,13 +159,24 @@ const buildPasswordResetOtpEmail = ({
   };
 };
 
-const sendEmail = async (message: SendMailOptions): Promise<void> => {
+const sendEmail = async (
+  message: SendMailOptions
+): Promise<void> => {
   try {
     await getTransporter().sendMail(message);
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown email error';
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : 'Unknown email error';
 
-    console.error('Failed to send authentication email', { message: errorMessage });
+    console.error(
+      'Failed to send authentication email',
+      {
+        message: errorMessage
+      }
+    );
+
     throw new AppError(
       'Unable to send authentication email',
       HTTP_STATUS.INTERNAL_SERVER_ERROR
@@ -120,9 +187,13 @@ const sendEmail = async (message: SendMailOptions): Promise<void> => {
 export const sendPasswordResetOtpEmail = async (
   params: SendPasswordResetOtpEmailParams
 ): Promise<void> => {
-  const email = buildPasswordResetOtpEmail(params);
+  const email =
+    buildPasswordResetOtpEmail(params);
 
-  logDevelopmentOtp(params.to, params.otp);
+  logDevelopmentOtp(
+    params.to,
+    params.otp
+  );
 
   await sendEmail({
     from: formatFromAddress(),

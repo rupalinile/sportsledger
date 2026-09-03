@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import appVersionRoutes from './app-version.routes';
 import authRoutes from './auth.routes';
 import dashboardRoutes from './dashboard.routes';
 import healthRoutes from './health.routes';
@@ -12,6 +13,7 @@ import teamRoutes from './team.routes';
 
 const router = Router();
 
+router.use(appVersionRoutes);
 router.use(authRoutes);
 router.use(dashboardRoutes);
 router.use(healthRoutes);

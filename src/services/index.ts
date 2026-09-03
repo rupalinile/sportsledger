@@ -1,3 +1,4 @@
+export * from './app-version.service';
 export * from './auth.service';
 export * from './dashboard.service';
 export * from './email.service';

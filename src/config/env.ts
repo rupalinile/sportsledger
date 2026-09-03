@@ -24,6 +24,10 @@ const envSchema = z
       .min(1)
       .default('/api/v1'),
 
+    // ============================================================
+    // DATABASE
+    // ============================================================
+
     DB_HOST: z.string().min(1),
 
     DB_PORT: z.coerce
@@ -44,6 +48,10 @@ const envSchema = z
       .positive()
       .default(10),
 
+    // ============================================================
+    // CORS
+    // ============================================================
+
     CORS_ORIGIN: z
       .string()
       .min(1)
@@ -52,6 +60,10 @@ const envSchema = z
     CORS_ALLOW_NO_ORIGIN: booleanStringSchema.default('true'),
 
     CORS_CREDENTIALS: booleanStringSchema.default('false'),
+
+    // ============================================================
+    // RATE LIMITING
+    // ============================================================
 
     RATE_LIMIT_WINDOW_MS: z.coerce
       .number()
@@ -64,6 +76,10 @@ const envSchema = z
       .int()
       .positive()
       .default(100),
+
+    // ============================================================
+    // JWT
+    // ============================================================
 
     JWT_ACCESS_SECRET: z.string().min(16),
 
@@ -86,22 +102,49 @@ const envSchema = z
       .min(1)
       .default('10m'),
 
-    SMTP_HOST: z.string().min(1),
+    // ============================================================
+    // SMTP
+    // Optional for now.
+    // Required later when email/forgot-password functionality
+    // is enabled in production.
+    // ============================================================
+
+    SMTP_HOST: z
+      .string()
+      .min(1)
+      .optional(),
 
     SMTP_PORT: z.coerce
       .number()
       .int()
-      .positive(),
+      .positive()
+      .optional(),
 
-    SMTP_SECURE: booleanStringSchema,
+    SMTP_SECURE: booleanStringSchema.optional(),
 
-    SMTP_USER: z.string().min(1),
+    SMTP_USER: z
+      .string()
+      .min(1)
+      .optional(),
 
-    SMTP_PASSWORD: z.string().min(1),
+    SMTP_PASSWORD: z
+      .string()
+      .min(1)
+      .optional(),
 
-    SMTP_FROM_NAME: z.string().min(1),
+    SMTP_FROM_NAME: z
+      .string()
+      .min(1)
+      .optional(),
 
-    SMTP_FROM_EMAIL: z.string().email(),
+    SMTP_FROM_EMAIL: z
+      .string()
+      .email()
+      .optional(),
+
+    // ============================================================
+    // PASSWORD RESET / OTP
+    // ============================================================
 
     PASSWORD_RESET_OTP_EXPIRY_MINUTES: z.coerce
       .number()
@@ -130,7 +173,8 @@ const envSchema = z
     OTP_HMAC_SECRET: z.string().min(32)
   })
   .superRefine((env, ctx) => {
-    const allowedOrigins = env.CORS_ORIGIN.split(',')
+    const allowedOrigins = env.CORS_ORIGIN
+      .split(',')
       .map((origin) => origin.trim())
       .filter(Boolean);
 
@@ -140,7 +184,8 @@ const envSchema = z
     ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'CORS_ORIGIN must list explicit origins in production',
+        message:
+          'CORS_ORIGIN must list explicit origins in production',
         path: ['CORS_ORIGIN']
       });
     }
@@ -151,7 +196,8 @@ const envSchema = z
     ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'CORS_CREDENTIALS cannot be true when CORS_ORIGIN contains *',
+        message:
+          'CORS_CREDENTIALS cannot be true when CORS_ORIGIN contains *',
         path: ['CORS_CREDENTIALS']
       });
     }
