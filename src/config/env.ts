@@ -75,7 +75,7 @@ const envSchema = z
       .number()
       .int()
       .positive()
-      .default(100),
+      .default(1500),
 
     // ============================================================
     // JWT

@@ -4,9 +4,11 @@ import {
   createTeamTransactionRecord,
   deleteTeamTransactionById,
   findTeamExpenseSummaryByTeamId,
+  findTeamExpenseSummaryByUserId,
   findTeamTransactionById,
   findTeamTransactionByIdAndUserId,
   findTeamTransactionsByTeamId,
+  findTeamTransactionsByUserId,
   TeamExpenseSummaryRow,
   TeamTransactionCategory,
   TeamTransactionRow,
@@ -122,6 +124,12 @@ export const getTeamExpenseSummaryByTeamId = async (
   const connection = await databasePool.getConnection();
 
   try {
+    if (teamId === 0) {
+      const summary = await findTeamExpenseSummaryByUserId(connection, userId);
+
+      return calculateTeamExpenseSummary(summary);
+    }
+
     const team = await findTeamByIdAndUserId(connection, {
       teamId,
       userId
@@ -194,6 +202,15 @@ export const getTeamTransactionsByTeamId = async (
   const connection = await databasePool.getConnection();
 
   try {
+    if (teamId === 0) {
+      const transactions = await findTeamTransactionsByUserId(connection, {
+        userId,
+        category: filters.category
+      });
+
+      return transactions.map(mapTeamTransactionListItem);
+    }
+
     const team = await findTeamByIdAndUserId(connection, {
       teamId,
       userId

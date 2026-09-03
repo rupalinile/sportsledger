@@ -37,20 +37,12 @@ export const findTeamExpenseSummaryByTeamId = async (
             AND p.user_id = pd.user_id
             AND p.is_active = 1
           WHERE pd.user_id = ?
-            AND (
-              EXISTS (
-                SELECT 1
-                FROM player_teams pt
-                WHERE pt.user_id = pd.user_id
-                  AND pt.player_id = pd.player_id
-                  AND pt.team_id = ?
-              )
-              OR NOT EXISTS (
-                SELECT 1
-                FROM player_teams pt
-                WHERE pt.user_id = pd.user_id
-                  AND pt.player_id = pd.player_id
-              )
+            AND EXISTS (
+              SELECT 1
+              FROM player_teams pt
+              WHERE pt.user_id = pd.user_id
+                AND pt.player_id = pd.player_id
+                AND pt.team_id = ?
             )
         ), 0) AS total_deposited_amount,
         COALESCE((
@@ -79,6 +71,55 @@ export const findTeamExpenseSummaryByTeamId = async (
             AND tt.category = 'EXPENSE'
         ), 0) AS other_expense_amount`,
     [params.userId, params.teamId, params.userId, params.teamId, params.teamId, params.teamId]
+  );
+
+  return rows[0];
+};
+
+export const findTeamExpenseSummaryByUserId = async (
+  connection: PoolConnection,
+  userId: number
+): Promise<TeamExpenseSummaryRow> => {
+  const [rows] = await connection.query<TeamExpenseSummaryRow[]>(
+    `SELECT
+        COALESCE((
+          SELECT SUM(pd.amount)
+          FROM player_deposits pd
+          INNER JOIN players p
+            ON p.id = pd.player_id
+            AND p.user_id = pd.user_id
+            AND p.is_active = 1
+          WHERE pd.user_id = ?
+        ), 0) AS total_deposited_amount,
+        COALESCE((
+          SELECT SUM(mp.per_head_expense)
+          FROM match_players mp
+          INNER JOIN matches m
+            ON m.id = mp.match_id
+            AND m.user_id = ?
+            AND m.match_status = 'COMPLETED'
+          INNER JOIN players p
+            ON p.id = mp.player_id
+            AND p.user_id = m.user_id
+            AND p.is_active = 1
+        ), 0) AS total_match_expense_amount,
+        COALESCE((
+          SELECT SUM(tt.amount)
+          FROM team_transactions tt
+          INNER JOIN teams t
+            ON t.id = tt.team_id
+            AND t.user_id = ?
+          WHERE tt.category = 'DEPOSITED'
+        ), 0) AS other_deposited_amount,
+        COALESCE((
+          SELECT SUM(tt.amount)
+          FROM team_transactions tt
+          INNER JOIN teams t
+            ON t.id = tt.team_id
+            AND t.user_id = ?
+          WHERE tt.category = 'EXPENSE'
+        ), 0) AS other_expense_amount`,
+    [userId, userId, userId, userId]
   );
 
   return rows[0];
@@ -240,6 +281,42 @@ export const findTeamTransactionsByTeamId = async (
       FROM team_transactions
       WHERE ${whereClauses.join(' AND ')}
       ORDER BY transaction_date DESC, id DESC`,
+    values
+  );
+
+  return rows;
+};
+
+export const findTeamTransactionsByUserId = async (
+  connection: PoolConnection,
+  params: {
+    userId: number;
+    category?: TeamTransactionCategory;
+  }
+): Promise<TeamTransactionRow[]> => {
+  const whereClauses = ['t.user_id = ?'];
+  const values: unknown[] = [params.userId];
+
+  if (params.category) {
+    whereClauses.push('tt.category = ?');
+    values.push(params.category);
+  }
+
+  const [rows] = await connection.query<TeamTransactionRow[]>(
+    `SELECT
+        tt.id,
+        tt.team_id,
+        tt.category,
+        tt.transaction_date,
+        tt.amount,
+        tt.description,
+        tt.created_at,
+        tt.updated_at
+      FROM team_transactions tt
+      INNER JOIN teams t
+        ON t.id = tt.team_id
+      WHERE ${whereClauses.join(' AND ')}
+      ORDER BY tt.transaction_date DESC, tt.id DESC`,
     values
   );
 

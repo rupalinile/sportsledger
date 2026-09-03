@@ -42,20 +42,12 @@ export const findDashboardTeamSummaryByUserId = async (
           AND p.user_id = pd.user_id
           AND p.is_active = 1
         WHERE team_scope.user_id = ?
-          AND (
-            EXISTS (
-              SELECT 1
-              FROM player_teams pt
-              WHERE pt.user_id = pd.user_id
-                AND pt.player_id = pd.player_id
-                AND pt.team_id = team_scope.id
-            )
-            OR NOT EXISTS (
-              SELECT 1
-              FROM player_teams pt
-              WHERE pt.user_id = pd.user_id
-                AND pt.player_id = pd.player_id
-            )
+          AND EXISTS (
+            SELECT 1
+            FROM player_teams pt
+            WHERE pt.user_id = pd.user_id
+              AND pt.player_id = pd.player_id
+              AND pt.team_id = team_scope.id
           )
         GROUP BY team_scope.id
       ) player_deposits

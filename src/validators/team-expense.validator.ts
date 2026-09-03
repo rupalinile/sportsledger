@@ -39,9 +39,44 @@ const positiveIntegerParam = z
     message: 'Transaction ID must be a valid positive integer'
   });
 
+const teamExpenseTeamIdParam = z
+  .string({
+    required_error: 'Team ID is required',
+    invalid_type_error: 'Team ID must be a valid team filter'
+  })
+  .trim()
+  .transform((value) => {
+    const normalizedValue = value.toLowerCase();
+
+    if (
+      normalizedValue === 'all' ||
+      normalizedValue === 'all-teams' ||
+      normalizedValue === 'all_teams'
+    ) {
+      return 0;
+    }
+
+    if (/^(0|[1-9]\d*)$/.test(value)) {
+      return Number(value);
+    }
+
+    return Number.NaN;
+  })
+  .refine((value) => Number.isSafeInteger(value) && value >= 0, {
+    message: 'Team ID must be a valid team filter'
+  });
+
 export const teamTransactionParamsSchema = z.object({
   transactionId: positiveIntegerParam
 });
+
+export const teamExpenseTeamParamsSchema = z
+  .object({
+    teamId: teamExpenseTeamIdParam.optional()
+  })
+  .transform((params) => ({
+    teamId: params.teamId ?? 0
+  }));
 
 export const createTeamTransactionBodySchema = z.object({
   teamId: positiveIntegerSchema,

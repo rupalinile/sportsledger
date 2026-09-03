@@ -20,7 +20,9 @@ router.get(
 );
 router.put('/team-expenses/transactions/:transactionId', updateTeamTransactionController);
 router.delete('/team-expenses/transactions/:transactionId', deleteTeamTransactionController);
+router.get('/team-expenses/transactions', getTeamTransactionsController);
 router.get('/team-expenses/transactions/:teamId', getTeamTransactionsController);
+router.get('/team-expenses/summary', getTeamExpenseSummaryController);
 router.get('/team-expenses/summary/:teamId', getTeamExpenseSummaryController);
 
 export default router;

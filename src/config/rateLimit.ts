@@ -2,9 +2,7 @@ import rateLimit from 'express-rate-limit';
 import { env } from './env';
 
 const apiRateLimitMaxRequests =
-  env.NODE_ENV === 'development'
-    ? Math.max(env.RATE_LIMIT_MAX_REQUESTS, 1000)
-    : env.RATE_LIMIT_MAX_REQUESTS;
+  Math.max(env.RATE_LIMIT_MAX_REQUESTS, 1500);
 
 export const apiRateLimiter = rateLimit({
   windowMs: env.RATE_LIMIT_WINDOW_MS,

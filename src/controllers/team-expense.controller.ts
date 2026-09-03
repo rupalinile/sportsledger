@@ -12,10 +12,10 @@ import {
 import { AppError } from '../utils/AppError';
 import {
   createTeamTransactionBodySchema,
+  teamExpenseTeamParamsSchema,
   teamTransactionParamsSchema,
   teamTransactionQuerySchema
 } from '../validators/team-expense.validator';
-import { teamParamsSchema } from '../validators/team.validator';
 
 const getAuthenticatedUserId = (req: Request): number => {
   if (!req.user) {
@@ -41,7 +41,7 @@ export const getTeamExpenseSummaryController = async (
 ): Promise<void> => {
   try {
     const userId = getAuthenticatedUserId(req);
-    const params = teamParamsSchema.parse(req.params);
+    const params = teamExpenseTeamParamsSchema.parse(req.params);
     const summary = await getTeamExpenseSummaryByTeamId(userId, params.teamId);
 
     res.status(HTTP_STATUS.OK).json({
@@ -94,7 +94,7 @@ export const getTeamTransactionsController = async (
 ): Promise<void> => {
   try {
     const userId = getAuthenticatedUserId(req);
-    const params = teamParamsSchema.parse(req.params);
+    const params = teamExpenseTeamParamsSchema.parse(req.params);
     const query = teamTransactionQuerySchema.parse(req.query);
     const transactions = await getTeamTransactionsByTeamId(userId, params.teamId, {
       category: query.category
