@@ -24,6 +24,9 @@ export type TeamExpenseSummaryResult = {
   otherExpenseAmount: number;
   otherAmount: number;
   totalTeamBalance: number;
+  total_scheduled_matches_amount: number;
+  scheduled_paid_matches_amount: number;
+  scheduled_pending_matches_amount: number;
 };
 
 export type TeamTransactionResult = {
@@ -96,12 +99,18 @@ export const calculateTeamExpenseSummary = (
     | 'total_match_expense_amount'
     | 'other_deposited_amount'
     | 'other_expense_amount'
+    | 'total_scheduled_matches_amount'
+    | 'scheduled_paid_matches_amount'
+    | 'scheduled_pending_matches_amount'
   >
 ): TeamExpenseSummaryResult => {
   const totalDepositedAmount = toAmount(summary.total_deposited_amount);
   const totalMatchExpenseAmount = toAmount(summary.total_match_expense_amount);
   const otherDepositedAmount = toAmount(summary.other_deposited_amount);
   const otherExpenseAmount = toAmount(summary.other_expense_amount);
+  const totalScheduledMatchesAmount = toAmount(summary.total_scheduled_matches_amount);
+  const scheduledPaidMatchesAmount = toAmount(summary.scheduled_paid_matches_amount);
+  const scheduledPendingMatchesAmount = toAmount(summary.scheduled_pending_matches_amount);
   const otherAmount = roundToTwoDecimals(otherDepositedAmount - otherExpenseAmount);
   const totalTeamBalance = roundToTwoDecimals(
     totalDepositedAmount - totalMatchExpenseAmount + otherAmount
@@ -113,7 +122,10 @@ export const calculateTeamExpenseSummary = (
     otherDepositedAmount,
     otherExpenseAmount,
     otherAmount,
-    totalTeamBalance
+    totalTeamBalance,
+    total_scheduled_matches_amount: totalScheduledMatchesAmount,
+    scheduled_paid_matches_amount: scheduledPaidMatchesAmount,
+    scheduled_pending_matches_amount: scheduledPendingMatchesAmount
   };
 };
 

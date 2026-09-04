@@ -18,6 +18,9 @@ export type TeamExpenseSummaryRow = RowDataPacket & {
   total_match_expense_amount: number | string;
   other_deposited_amount: number | string;
   other_expense_amount: number | string;
+  total_scheduled_matches_amount: number | string;
+  scheduled_paid_matches_amount: number | string;
+  scheduled_pending_matches_amount: number | string;
 };
 
 export const findTeamExpenseSummaryByTeamId = async (
@@ -69,8 +72,44 @@ export const findTeamExpenseSummaryByTeamId = async (
           FROM team_transactions tt
           WHERE tt.team_id = ?
             AND tt.category = 'EXPENSE'
-        ), 0) AS other_expense_amount`,
-    [params.userId, params.teamId, params.userId, params.teamId, params.teamId, params.teamId]
+        ), 0) AS other_expense_amount,
+        COALESCE((
+          SELECT SUM(COALESCE(match_fees, 0))
+          FROM matches
+          WHERE user_id = ?
+            AND my_team_id = ?
+            AND match_status = 'SCHEDULED'
+        ), 0) AS total_scheduled_matches_amount,
+        COALESCE((
+          SELECT SUM(COALESCE(match_fees, 0))
+          FROM matches
+          WHERE user_id = ?
+            AND my_team_id = ?
+            AND match_status = 'SCHEDULED'
+            AND payment_status = 'PAID'
+        ), 0) AS scheduled_paid_matches_amount,
+        COALESCE((
+          SELECT SUM(COALESCE(match_fees, 0))
+          FROM matches
+          WHERE user_id = ?
+            AND my_team_id = ?
+            AND match_status = 'SCHEDULED'
+            AND payment_status = 'PENDING'
+        ), 0) AS scheduled_pending_matches_amount`,
+    [
+      params.userId,
+      params.teamId,
+      params.userId,
+      params.teamId,
+      params.teamId,
+      params.teamId,
+      params.userId,
+      params.teamId,
+      params.userId,
+      params.teamId,
+      params.userId,
+      params.teamId
+    ]
   );
 
   return rows[0];
@@ -118,8 +157,28 @@ export const findTeamExpenseSummaryByUserId = async (
             ON t.id = tt.team_id
             AND t.user_id = ?
           WHERE tt.category = 'EXPENSE'
-        ), 0) AS other_expense_amount`,
-    [userId, userId, userId, userId]
+        ), 0) AS other_expense_amount,
+        COALESCE((
+          SELECT SUM(COALESCE(match_fees, 0))
+          FROM matches
+          WHERE user_id = ?
+            AND match_status = 'SCHEDULED'
+        ), 0) AS total_scheduled_matches_amount,
+        COALESCE((
+          SELECT SUM(COALESCE(match_fees, 0))
+          FROM matches
+          WHERE user_id = ?
+            AND match_status = 'SCHEDULED'
+            AND payment_status = 'PAID'
+        ), 0) AS scheduled_paid_matches_amount,
+        COALESCE((
+          SELECT SUM(COALESCE(match_fees, 0))
+          FROM matches
+          WHERE user_id = ?
+            AND match_status = 'SCHEDULED'
+            AND payment_status = 'PENDING'
+        ), 0) AS scheduled_pending_matches_amount`,
+    [userId, userId, userId, userId, userId, userId, userId]
   );
 
   return rows[0];

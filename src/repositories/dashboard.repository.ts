@@ -9,6 +9,9 @@ export type DashboardTeamSummaryRow = RowDataPacket & {
   other_expense_amount: number | string;
   total_squad_count: number | string;
   total_matches_scheduled: number | string;
+  total_scheduled_matches_amount: number | string;
+  scheduled_paid_matches_amount: number | string;
+  scheduled_pending_matches_amount: number | string;
 };
 
 export const findDashboardTeamSummaryByUserId = async (
@@ -28,7 +31,10 @@ export const findDashboardTeamSummaryByUserId = async (
         COALESCE(team_deposits.other_deposited_amount, 0) AS other_deposited_amount,
         COALESCE(team_expenses.other_expense_amount, 0) AS other_expense_amount,
         COALESCE(squad_counts.total_squad_count, 0) AS total_squad_count,
-        COALESCE(scheduled_matches.total_matches_scheduled, 0) AS total_matches_scheduled
+        COALESCE(scheduled_matches.total_matches_scheduled, 0) AS total_matches_scheduled,
+        COALESCE(scheduled_matches.total_scheduled_matches_amount, 0) AS total_scheduled_matches_amount,
+        COALESCE(scheduled_matches.scheduled_paid_matches_amount, 0) AS scheduled_paid_matches_amount,
+        COALESCE(scheduled_matches.scheduled_pending_matches_amount, 0) AS scheduled_pending_matches_amount
       FROM teams t
       LEFT JOIN (
         SELECT
@@ -108,7 +114,10 @@ export const findDashboardTeamSummaryByUserId = async (
       LEFT JOIN (
         SELECT
           my_team_id AS team_id,
-          COUNT(*) AS total_matches_scheduled
+          COUNT(*) AS total_matches_scheduled,
+          SUM(COALESCE(match_fees, 0)) AS total_scheduled_matches_amount,
+          SUM(CASE WHEN payment_status = 'PAID' THEN COALESCE(match_fees, 0) ELSE 0 END) AS scheduled_paid_matches_amount,
+          SUM(CASE WHEN payment_status = 'PENDING' THEN COALESCE(match_fees, 0) ELSE 0 END) AS scheduled_pending_matches_amount
         FROM matches
         WHERE user_id = ?
           AND match_status = ?
@@ -140,6 +149,9 @@ export type DashboardOverallSummaryRow = RowDataPacket & {
   other_expense_amount: number | string;
   total_squad_count: number | string;
   total_matches_scheduled: number | string;
+  total_scheduled_matches_amount: number | string;
+  scheduled_paid_matches_amount: number | string;
+  scheduled_pending_matches_amount: number | string;
 };
 
 export const findDashboardOverallSummaryByUserId = async (
@@ -200,7 +212,27 @@ export const findDashboardOverallSummaryByUserId = async (
           FROM matches
           WHERE user_id = ?
             AND match_status = ?
-        ), 0) AS total_matches_scheduled`,
+        ), 0) AS total_matches_scheduled,
+        COALESCE((
+          SELECT SUM(COALESCE(match_fees, 0))
+          FROM matches
+          WHERE user_id = ?
+            AND match_status = ?
+        ), 0) AS total_scheduled_matches_amount,
+        COALESCE((
+          SELECT SUM(COALESCE(match_fees, 0))
+          FROM matches
+          WHERE user_id = ?
+            AND match_status = ?
+            AND payment_status = 'PAID'
+        ), 0) AS scheduled_paid_matches_amount,
+        COALESCE((
+          SELECT SUM(COALESCE(match_fees, 0))
+          FROM matches
+          WHERE user_id = ?
+            AND match_status = ?
+            AND payment_status = 'PENDING'
+        ), 0) AS scheduled_pending_matches_amount`,
     [
       params.userId,
       params.userId,
@@ -208,6 +240,12 @@ export const findDashboardOverallSummaryByUserId = async (
       params.userId,
       params.userId,
       params.userId,
+      params.userId,
+      params.scheduledMatchStatus,
+      params.userId,
+      params.scheduledMatchStatus,
+      params.userId,
+      params.scheduledMatchStatus,
       params.userId,
       params.scheduledMatchStatus
     ]

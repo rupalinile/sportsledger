@@ -12,6 +12,9 @@ export type DashboardTeamSummary = {
   total_team_balance: number;
   total_squad_count: number;
   total_matches_scheduled: number;
+  total_scheduled_matches_amount: number;
+  scheduled_paid_matches_amount: number;
+  scheduled_pending_matches_amount: number;
 };
 
 export type DashboardSummaryResult = {
@@ -20,10 +23,16 @@ export type DashboardSummaryResult = {
     total_team_balance: number;
     total_squad_count: number;
     total_matches_scheduled: number;
+    total_scheduled_matches_amount: number;
+    scheduled_paid_matches_amount: number;
+    scheduled_pending_matches_amount: number;
   };
 };
 
 const toCount = (value: number | string | undefined): number => Number(value ?? 0);
+const roundToTwoDecimals = (value: number): number => Math.round(value * 100) / 100;
+const toAmount = (value: number | string | undefined): number =>
+  roundToTwoDecimals(Number(value ?? 0));
 
 export const getDashboardSummaryByUserId = async (
   userId: number
@@ -50,7 +59,10 @@ export const getDashboardSummaryByUserId = async (
         team_name: team.team_name,
         total_team_balance: expenseSummary.totalTeamBalance,
         total_squad_count: toCount(team.total_squad_count),
-        total_matches_scheduled: toCount(team.total_matches_scheduled)
+        total_matches_scheduled: toCount(team.total_matches_scheduled),
+        total_scheduled_matches_amount: toAmount(team.total_scheduled_matches_amount),
+        scheduled_paid_matches_amount: toAmount(team.scheduled_paid_matches_amount),
+        scheduled_pending_matches_amount: toAmount(team.scheduled_pending_matches_amount)
       };
     });
     const overallExpenseSummary = calculateTeamExpenseSummary(overallRow);
@@ -60,7 +72,10 @@ export const getDashboardSummaryByUserId = async (
       overall_summary: {
         total_team_balance: overallExpenseSummary.totalTeamBalance,
         total_squad_count: toCount(overallRow?.total_squad_count),
-        total_matches_scheduled: toCount(overallRow?.total_matches_scheduled)
+        total_matches_scheduled: toCount(overallRow?.total_matches_scheduled),
+        total_scheduled_matches_amount: toAmount(overallRow?.total_scheduled_matches_amount),
+        scheduled_paid_matches_amount: toAmount(overallRow?.scheduled_paid_matches_amount),
+        scheduled_pending_matches_amount: toAmount(overallRow?.scheduled_pending_matches_amount)
       }
     };
   } finally {
