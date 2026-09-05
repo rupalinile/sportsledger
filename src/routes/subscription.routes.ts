@@ -18,6 +18,7 @@ router.get(
   requireSubscription(
     SUBSCRIPTION_PLAN_CODES.FREE,
     SUBSCRIPTION_PLAN_CODES.MONTHLY,
+    SUBSCRIPTION_PLAN_CODES.QUARTERLY,
     SUBSCRIPTION_PLAN_CODES.YEARLY
   ),
   (req, res) => {
@@ -34,6 +35,7 @@ router.get(
   authenticateJwt,
   requireSubscription(
     SUBSCRIPTION_PLAN_CODES.MONTHLY,
+    SUBSCRIPTION_PLAN_CODES.QUARTERLY,
     SUBSCRIPTION_PLAN_CODES.YEARLY
   ),
   (req, res) => {

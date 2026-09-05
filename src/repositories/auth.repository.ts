@@ -47,6 +47,7 @@ export type CurrentUserRow = RowDataPacket & {
 type PlanRow = RowDataPacket & {
   id: number;
   plan_code: string;
+  duration_days: number | null;
 };
 
 export type ActiveSubscriptionRow = RowDataPacket & {
@@ -541,7 +542,7 @@ export const findSubscriptionPlanByCode = async (
   planCode: string
 ): Promise<PlanRow | null> => {
   const [rows] = await connection.query<PlanRow[]>(
-    'SELECT id, plan_code FROM subscription_plans WHERE plan_code = ? LIMIT 1',
+    'SELECT id, plan_code, duration_days FROM subscription_plans WHERE plan_code = ? LIMIT 1',
     [planCode]
   );
 
@@ -551,12 +552,13 @@ export const findSubscriptionPlanByCode = async (
 export const createUserSubscription = async (
   connection: PoolConnection,
   userId: number,
-  planId: number
+  planId: number,
+  endDate: Date | null = null
 ): Promise<void> => {
   await connection.query<ResultSetHeader>(
     `INSERT INTO user_subscriptions
       (user_id, plan_id, subscription_status, start_date, end_date, auto_renew)
-     VALUES (?, ?, ?, NOW(), NULL, ?)`,
-    [userId, planId, 'ACTIVE', false]
+     VALUES (?, ?, ?, NOW(), ?, ?)`,
+    [userId, planId, 'ACTIVE', endDate, false]
   );
 };

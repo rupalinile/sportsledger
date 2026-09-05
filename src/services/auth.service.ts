@@ -58,9 +58,10 @@ import {
   VerifyResetOtpInput
 } from '../validators/auth.validator';
 import { sendPasswordResetOtpEmail } from './email.service';
+import { SUBSCRIPTION_PLAN_CODES } from '../types/subscription.types';
 
 const PASSWORD_SALT_ROUNDS = 12;
-const FREE_PLAN_CODE = 'FREE';
+const DEFAULT_REGISTRATION_PLAN_CODE = SUBSCRIPTION_PLAN_CODES.QUARTERLY;
 const ACTIVE_STATUS = 'ACTIVE' as const;
 const INACTIVE_STATUS = 'INACTIVE' as const;
 const PASSWORD_RESET_REQUEST_COOLDOWN_MS = 60 * 1000;
@@ -122,6 +123,14 @@ export type VerifyResetOtpResult = {
 const INVALID_CREDENTIALS_MESSAGE = 'Invalid username or password';
 const INVALID_REFRESH_TOKEN_MESSAGE = 'Invalid refresh token';
 const INVALID_PASSWORD_RESET_TOKEN_MESSAGE = 'Invalid or expired password reset token';
+
+const getSubscriptionEndDate = (durationDays: number | null): Date | null => {
+  if (!durationDays) {
+    return null;
+  }
+
+  return new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
+};
 
 const mapSubscription = (subscription: ActiveSubscriptionRow): LoginResult['subscription'] => ({
   planCode: subscription.plan_code,
@@ -224,10 +233,16 @@ export const registerUser = async (input: RegisterInput): Promise<RegisterResult
       }
     }
 
-    const freePlan = await findSubscriptionPlanByCode(connection, FREE_PLAN_CODE);
+    const defaultPlan = await findSubscriptionPlanByCode(
+      connection,
+      DEFAULT_REGISTRATION_PLAN_CODE
+    );
 
-    if (!freePlan) {
-      throw new AppError('Free subscription plan is not configured', HTTP_STATUS.INTERNAL_SERVER_ERROR);
+    if (!defaultPlan) {
+      throw new AppError(
+        'Default quarterly subscription plan is not configured',
+        HTTP_STATUS.INTERNAL_SERVER_ERROR
+      );
     }
 
     const passwordHash = await bcrypt.hash(input.password, PASSWORD_SALT_ROUNDS);
@@ -240,7 +255,12 @@ export const registerUser = async (input: RegisterInput): Promise<RegisterResult
       status: ACTIVE_STATUS
     });
 
-    await createUserSubscription(connection, userId, freePlan.id);
+    await createUserSubscription(
+      connection,
+      userId,
+      defaultPlan.id,
+      getSubscriptionEndDate(defaultPlan.duration_days)
+    );
     await connection.commit();
 
     return {
@@ -252,7 +272,7 @@ export const registerUser = async (input: RegisterInput): Promise<RegisterResult
         phoneNumber: input.phoneNumber ?? null
       },
       subscription: {
-        planCode: freePlan.plan_code,
+        planCode: defaultPlan.plan_code,
         status: ACTIVE_STATUS
       }
     };

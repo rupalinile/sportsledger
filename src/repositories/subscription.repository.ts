@@ -48,10 +48,10 @@ export const findCurrentValidSubscriptionByUserId = async (
       WHERE us.user_id = ?
         AND us.subscription_status = ?
         AND sp.is_active = TRUE
-        AND sp.plan_code IN (?, ?, ?)
+        AND sp.plan_code IN (?, ?, ?, ?)
         AND (us.end_date IS NULL OR us.end_date > NOW())
       ORDER BY
-        CASE WHEN sp.plan_code IN (?, ?) THEN 1 ELSE 0 END DESC,
+        CASE WHEN sp.plan_code IN (?, ?, ?) THEN 1 ELSE 0 END DESC,
         us.start_date DESC,
         us.id DESC
       LIMIT 1`,
@@ -60,6 +60,7 @@ export const findCurrentValidSubscriptionByUserId = async (
       SUBSCRIPTION_STATUSES.ACTIVE,
       SUBSCRIPTION_PLAN_CODES.FREE,
       SUBSCRIPTION_PLAN_CODES.MONTHLY,
+      SUBSCRIPTION_PLAN_CODES.QUARTERLY,
       SUBSCRIPTION_PLAN_CODES.YEARLY,
       ...PAID_SUBSCRIPTION_PLAN_CODES
     ]
@@ -117,19 +118,22 @@ export const findActiveSubscriptionPlans = async (
         duration_days
       FROM subscription_plans
       WHERE is_active = TRUE
-        AND plan_code IN (?, ?, ?)
+        AND plan_code IN (?, ?, ?, ?)
       ORDER BY CASE plan_code
         WHEN ? THEN 1
         WHEN ? THEN 2
         WHEN ? THEN 3
-        ELSE 4
+        WHEN ? THEN 4
+        ELSE 5
       END`,
     [
       SUBSCRIPTION_PLAN_CODES.FREE,
       SUBSCRIPTION_PLAN_CODES.MONTHLY,
+      SUBSCRIPTION_PLAN_CODES.QUARTERLY,
       SUBSCRIPTION_PLAN_CODES.YEARLY,
       SUBSCRIPTION_PLAN_CODES.FREE,
       SUBSCRIPTION_PLAN_CODES.MONTHLY,
+      SUBSCRIPTION_PLAN_CODES.QUARTERLY,
       SUBSCRIPTION_PLAN_CODES.YEARLY
     ]
   );
@@ -147,7 +151,7 @@ export const expireActivePaidSubscriptionsByUserId = async (
      SET us.subscription_status = ?
      WHERE us.user_id = ?
        AND us.subscription_status = ?
-       AND sp.plan_code IN (?, ?)
+       AND sp.plan_code IN (?, ?, ?)
        AND us.end_date IS NOT NULL
        AND us.end_date <= NOW()`,
     [
@@ -179,7 +183,7 @@ export const findLatestActivePaidSubscriptionByUserId = async (
       WHERE us.user_id = ?
         AND us.subscription_status = ?
         AND sp.is_active = TRUE
-        AND sp.plan_code IN (?, ?)
+        AND sp.plan_code IN (?, ?, ?)
       ORDER BY
         us.start_date DESC,
         us.id DESC
@@ -212,7 +216,7 @@ export const findLatestExpiredPaidSubscriptionByUserId = async (
       WHERE us.user_id = ?
         AND us.subscription_status = ?
         AND sp.is_active = TRUE
-        AND sp.plan_code IN (?, ?)
+        AND sp.plan_code IN (?, ?, ?)
         AND us.end_date IS NOT NULL
         AND us.end_date <= NOW()
       ORDER BY

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const matchSlotStatuses = ['GROUND_BOOKED', 'SLOT_BOOKED'] as const;
-export const matchPaymentStatuses = ['PENDING', 'PAID'] as const;
+export const matchPaymentStatuses = ['PENDING', 'PAID', 'RECEIVED'] as const;
 
 const positiveIntegerSchema = z
   .number({

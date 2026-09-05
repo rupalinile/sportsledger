@@ -37,6 +37,12 @@ export const subscriptionFeatureAccessExamples: SubscriptionFeatureAccessExample
     deniedFeatures: [SUBSCRIPTION_FEATURE_CODES.CLOUD_BACKUP]
   },
   {
+    name: 'QUARTERLY users receive all FREE features plus expenses and reports',
+    planCode: SUBSCRIPTION_PLAN_CODES.QUARTERLY,
+    allowedFeatures: monthlyFeatures,
+    deniedFeatures: [SUBSCRIPTION_FEATURE_CODES.CLOUD_BACKUP]
+  },
+  {
     name: 'YEARLY users receive every initial subscription feature',
     planCode: SUBSCRIPTION_PLAN_CODES.YEARLY,
     allowedFeatures: [
